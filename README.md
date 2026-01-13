@@ -6,6 +6,7 @@ A Python utility that automatically converts Microsoft Word documents to IEEE st
 
 - ✅ Automatic IEEE margin formatting (0.75" top, 1.0" bottom, 0.625" sides)
 - ✅ IEEE-compliant font settings (Times New Roman, appropriate sizes)
+- ✅ **Two-column format support** (optional, IEEE standard)
 - ✅ Automatic detection and formatting of:
   - Title and author information
   - Abstract section
@@ -49,6 +50,20 @@ python word_to_ieee.py input_document.docx
 
 This will create a new file named `input_document_IEEE.docx` in the same directory.
 
+### Two-Column Format
+
+Enable IEEE standard two-column format:
+
+```bash
+python word_to_ieee.py input_document.docx --two-column
+```
+
+Or use the short flag:
+
+```bash
+python word_to_ieee.py input_document.docx -2
+```
+
 ### Specify Output File
 
 You can also specify a custom output filename:
@@ -57,14 +72,35 @@ You can also specify a custom output filename:
 python word_to_ieee.py input_document.docx output_ieee.docx
 ```
 
+Or use the `-o` flag:
+
+```bash
+python word_to_ieee.py input_document.docx -o output_ieee.docx --two-column
+```
+
 ### Example
 
 ```bash
-# Convert paper.docx to IEEE format
+# Convert paper.docx to IEEE format (single column)
 python word_to_ieee.py paper.docx
+
+# Convert paper.docx to IEEE format with two columns
+python word_to_ieee.py paper.docx --two-column
+
+# Specify custom output file with two-column format
+python word_to_ieee.py paper.docx -o formatted_paper.docx --two-column
 
 # Output: paper_IEEE.docx created in the same directory
 ```
+
+### Command-Line Options
+
+- `input_file` - Input Word document (.docx) [required]
+- `output_file` - Output Word document [optional, positional]
+- `-o, --output` - Alternative way to specify output file
+- `--two-column, -2` - Enable two-column format (IEEE standard)
+- `--version` - Show version information
+- `-h, --help` - Show help message
 
 ## IEEE Format Specifications
 
@@ -119,7 +155,9 @@ The converter:
   - Ensure your document has clear section headings
   - Use standard section numbering (I., II., III. or 1., 2., 3.)
   - Label figures and tables clearly
-- Two-column format is not automatically applied (IEEE allows single-column for initial submissions)
+- Two-column format is optional (use `--two-column` flag to enable it)
+- In two-column mode, title and author sections are currently included in the two-column layout
+  - For best results with two-column format, consider manually keeping title/authors in single-column
 - Complex formatting may require manual adjustment
 - Images and embedded objects are preserved but not reformatted
 

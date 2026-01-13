@@ -43,24 +43,26 @@ class IEEEFormatter:
         'line_spacing': 1.0  # Single spacing
     }
     
-    def __init__(self, input_file, output_file=None):
+    def __init__(self, input_file, output_file=None, two_column=False):
         """
         Initialize the IEEE formatter.
-        
+
         Args:
             input_file: Path to input Word document
             output_file: Path to output Word document (optional)
+            two_column: Enable two-column format (default: False)
         """
         self.input_file = Path(input_file)
         if not self.input_file.exists():
             raise FileNotFoundError(f"Input file not found: {input_file}")
-        
+
         if output_file:
             self.output_file = Path(output_file)
         else:
             self.output_file = self.input_file.parent / f"{self.input_file.stem}_IEEE{self.input_file.suffix}"
-        
+
         self.doc = Document(str(self.input_file))
+        self.two_column = two_column
     
     def apply_ieee_formatting(self):
         """Apply IEEE formatting to the entire document."""
@@ -273,27 +275,103 @@ class IEEEFormatter:
     
     def _format_sections(self):
         """Ensure proper section formatting."""
-        # IEEE papers typically use two-column format, but we'll keep single column
-        # for simplicity. Users can manually adjust if needed.
-        pass
+        if self.two_column:
+            # Apply two-column format to all sections
+            # Title and author sections should remain single column
+            # Body content (after abstract) should be two-column
+            self._apply_two_column_layout()
+
+    def _apply_two_column_layout(self):
+        """Apply two-column layout to document sections."""
+        # Find where to start two-column format (after title and author info)
+        # Typically starts from abstract or first section
+
+        # Create a new section for two-column layout
+        # The first section (title, authors) remains single column
+        # Subsequent sections use two columns
+
+        sections = self.doc.sections
+
+        # If document has only one section, we need to add a section break
+        # after the title/author area to enable two-column formatting
+        if len(sections) == 1:
+            # Add section break before abstract or first section heading
+            abstract_found = False
+            for i, paragraph in enumerate(self.doc.paragraphs):
+                text = paragraph.text.strip().lower()
+                # Start two-column from abstract or first section heading
+                if text == 'abstract' or self._is_section_heading(paragraph):
+                    # Insert a section break before this paragraph
+                    # Note: python-docx doesn't support inserting section breaks mid-document easily
+                    # So we'll apply two-column to all sections for now
+                    abstract_found = True
+                    break
+
+        # Apply two-column format to all sections
+        # In a real implementation, you'd want the first section (title/authors) single column
+        # and remaining sections two-column
+        for section in sections:
+            # Two columns with 0.5 inch spacing
+            section.page_width = Inches(8.5)  # US Letter width
+            section.page_height = Inches(11)  # US Letter height
+
+            # For two-column IEEE format:
+            # Each column is approximately 3.5 inches wide
+            # with 0.25 inches spacing between columns
+            # This is handled by Word's column settings
+
+            # Note: python-docx has limited support for column formatting
+            # The _element property gives access to the underlying XML
+            from docx.oxml import parse_xml
+            from docx.oxml.ns import nsdecls
+
+            # Create two-column layout using Word's XML structure
+            cols_xml = parse_xml(
+                f'<w:cols {nsdecls("w")} w:num="2" w:space="360"/>'
+            )
+            section._sectPr.append(cols_xml)
 
 
 def main():
     """Main entry point for the converter."""
-    if len(sys.argv) < 2:
-        print("Usage: python word_to_ieee.py <input_file.docx> [output_file.docx]")
-        print("\nExample:")
-        print("  python word_to_ieee.py paper.docx")
-        print("  python word_to_ieee.py paper.docx paper_ieee.docx")
-        sys.exit(1)
-    
-    input_file = sys.argv[1]
-    output_file = sys.argv[2] if len(sys.argv) > 2 else None
-    
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description='Convert Microsoft Word documents to IEEE standard format.',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''
+Examples:
+  python word_to_ieee.py paper.docx
+  python word_to_ieee.py paper.docx paper_ieee.docx
+  python word_to_ieee.py paper.docx --two-column
+  python word_to_ieee.py paper.docx -o output.docx --two-column
+        '''
+    )
+
+    parser.add_argument('input_file', help='Input Word document (.docx)')
+    parser.add_argument('output_file', nargs='?', default=None,
+                        help='Output Word document (optional)')
+    parser.add_argument('-o', '--output', dest='output_alt', default=None,
+                        help='Alternative way to specify output file')
+    parser.add_argument('--two-column', '-2', action='store_true',
+                        help='Enable two-column format (IEEE standard)')
+    parser.add_argument('--version', action='version', version='%(prog)s 1.1.0')
+
+    args = parser.parse_args()
+
+    input_file = args.input_file
+    output_file = args.output_file or args.output_alt
+    two_column = args.two_column
+
     try:
-        formatter = IEEEFormatter(input_file, output_file)
+        formatter = IEEEFormatter(input_file, output_file, two_column=two_column)
         output_path = formatter.apply_ieee_formatting()
-        print(f"\n[SUCCESS] IEEE-formatted document saved to: {output_path}")
+
+        if two_column:
+            print(f"\n[SUCCESS] IEEE-formatted document (two-column) saved to: {output_path}")
+        else:
+            print(f"\n[SUCCESS] IEEE-formatted document saved to: {output_path}")
+            print("         Use --two-column flag for two-column format")
     except Exception as e:
         print(f"\n[ERROR] {e}", file=sys.stderr)
         sys.exit(1)
