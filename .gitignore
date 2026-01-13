@@ -44,3 +44,7 @@ test_*.docx
 
 # Output files (optional - remove if you want to track converted files)
 *_IEEE.docx
+
+# Allow examples folder
+!examples/
+!examples/*.docx

@@ -293,9 +293,9 @@ def main():
     try:
         formatter = IEEEFormatter(input_file, output_file)
         output_path = formatter.apply_ieee_formatting()
-        print(f"\n✓ Success! IEEE-formatted document saved to: {output_path}")
+        print(f"\n[SUCCESS] IEEE-formatted document saved to: {output_path}")
     except Exception as e:
-        print(f"\n✗ Error: {e}", file=sys.stderr)
+        print(f"\n[ERROR] {e}", file=sys.stderr)
         sys.exit(1)
 
 
