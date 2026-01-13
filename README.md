@@ -1,0 +1,144 @@
+# Word to IEEE Format Converter
+
+A Python utility that automatically converts Microsoft Word documents to IEEE standard format, applying proper formatting, fonts, margins, and styles according to IEEE publication guidelines.
+
+## Features
+
+- ✅ Automatic IEEE margin formatting (0.75" top, 1.0" bottom, 0.625" sides)
+- ✅ IEEE-compliant font settings (Times New Roman, appropriate sizes)
+- ✅ Automatic detection and formatting of:
+  - Title and author information
+  - Abstract section
+  - Section headings (I., II., III., etc.)
+  - Subsection headings (A., B., C., etc.)
+  - Figure and table captions
+  - References
+  - Body text with proper indentation
+- ✅ Table formatting
+- ✅ Single spacing throughout
+- ✅ Proper paragraph alignment and indentation
+
+## Installation
+
+### Prerequisites
+
+- Python 3.7 or higher
+- pip (Python package installer)
+
+### Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+Or install directly:
+
+```bash
+pip install python-docx
+```
+
+## Usage
+
+### Basic Usage
+
+Convert a Word document to IEEE format:
+
+```bash
+python word_to_ieee.py input_document.docx
+```
+
+This will create a new file named `input_document_IEEE.docx` in the same directory.
+
+### Specify Output File
+
+You can also specify a custom output filename:
+
+```bash
+python word_to_ieee.py input_document.docx output_ieee.docx
+```
+
+### Example
+
+```bash
+# Convert paper.docx to IEEE format
+python word_to_ieee.py paper.docx
+
+# Output: paper_IEEE.docx created in the same directory
+```
+
+## IEEE Format Specifications
+
+The converter applies the following IEEE standards:
+
+### Margins
+- Top: 0.75 inches
+- Bottom: 1.0 inches
+- Left: 0.625 inches
+- Right: 0.625 inches
+
+### Fonts
+- **Title**: Times New Roman, 24pt, Bold, Centered
+- **Author**: Times New Roman, 10pt, Regular, Centered
+- **Abstract Heading**: Times New Roman, 10pt, Bold, Italic
+- **Abstract Text**: Times New Roman, 10pt, Regular
+- **Section Headings**: Times New Roman, 10pt, Bold
+- **Subsection Headings**: Times New Roman, 10pt, Bold, Italic
+- **Body Text**: Times New Roman, 10pt, Regular, Justified
+- **Figure/Table Captions**: Times New Roman, 9pt, Italic, Centered
+- **References**: Times New Roman, 9pt, Regular, Hanging Indent
+
+### Spacing
+- Single line spacing throughout
+- Proper spacing before/after headings
+- First line indentation for body paragraphs
+- Hanging indent for references
+
+## How It Works
+
+The converter:
+
+1. **Reads** your Word document
+2. **Detects** different elements (title, sections, subsections, etc.)
+3. **Applies** IEEE formatting rules to each element
+4. **Saves** the formatted document
+
+### Detection Logic
+
+- **Title**: First paragraph, centered, short text
+- **Author**: Contains keywords like "author", "@", "email", "university"
+- **Abstract**: Paragraph starting with "Abstract"
+- **Sections**: Paragraphs starting with Roman numerals (I., II., III., etc.) or numbers (1., 2., 3., etc.)
+- **Subsections**: Paragraphs starting with letters (A., B., C., etc.)
+- **Figure Captions**: Text starting with "Figure" or "Fig."
+- **Table Captions**: Text starting with "Table"
+- **References**: Paragraphs starting with "[number]"
+
+## Limitations
+
+- The converter uses heuristics to detect document elements. For best results:
+  - Ensure your document has clear section headings
+  - Use standard section numbering (I., II., III. or 1., 2., 3.)
+  - Label figures and tables clearly
+- Two-column format is not automatically applied (IEEE allows single-column for initial submissions)
+- Complex formatting may require manual adjustment
+- Images and embedded objects are preserved but not reformatted
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is open source and available under the MIT License.
+
+## Author
+
+Created as a utility for converting academic papers to IEEE format.
+
+## Support
+
+If you encounter any issues or have suggestions for improvement, please open an issue on GitHub.
+
+## Acknowledgments
+
+This utility is designed to help researchers and authors format their papers according to IEEE publication standards.
