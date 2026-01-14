@@ -4,6 +4,7 @@ A Python utility that automatically converts Microsoft Word documents to IEEE st
 
 ## Features
 
+- ✅ **Web-based UI** with drag-and-drop file upload
 - ✅ Automatic IEEE margin formatting (0.75" top, 1.0" bottom, 0.625" sides)
 - ✅ IEEE-compliant font settings (Times New Roman, appropriate sizes)
 - ✅ **Two-column format support** (optional, IEEE standard)
@@ -35,12 +36,26 @@ pip install -r requirements.txt
 Or install directly:
 
 ```bash
-pip install python-docx
+pip install python-docx flask
 ```
 
 ## Usage
 
-### Basic Usage
+### Web Interface (Recommended)
+
+The easiest way to use the converter is through the web interface:
+
+```bash
+python word_to_ieee_web.py
+```
+
+Then open http://127.0.0.1:5000 in your browser. You can:
+- Drag and drop your `.docx` file onto the upload area
+- Or click to browse and select a file
+- Toggle the two-column format option
+- Click "Convert to IEEE Format" to download the converted document
+
+### Command Line Interface
 
 Convert a Word document to IEEE format:
 
