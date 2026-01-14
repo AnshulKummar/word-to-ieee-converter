@@ -129,7 +129,8 @@ The converter applies the following IEEE standards:
 
 ### Fonts
 - **Title**: Times New Roman, 24pt, Bold, Centered
-- **Author**: Times New Roman, 10pt, Regular, Centered
+- **Author Names**: Times New Roman, 10pt, Regular, Left-aligned
+- **Author Affiliations/Titles**: Times New Roman, 10pt, Italic, Left-aligned
 - **Abstract Heading**: Times New Roman, 10pt, Bold, Italic
 - **Abstract Text**: Times New Roman, 10pt, Regular
 - **Section Headings**: Times New Roman, 10pt, Bold
@@ -155,8 +156,13 @@ The converter:
 
 ### Detection Logic
 
-- **Title**: First paragraph, centered, short text
-- **Author**: Contains keywords like "author", "@", "email", "university"
+- **Title**: First non-empty paragraph (excluding author info keywords)
+- **Author Section**: All paragraphs between title and abstract, including:
+  - Author names
+  - Affiliations and departments
+  - Email addresses
+  - Locations (city, state)
+  - Job titles
 - **Abstract**: Paragraph starting with "Abstract"
 - **Sections**: Paragraphs starting with Roman numerals (I., II., III., etc.) or numbers (1., 2., 3., etc.)
 - **Subsections**: Paragraphs starting with letters (A., B., C., etc.)
@@ -164,10 +170,19 @@ The converter:
 - **Table Captions**: Text starting with "Table"
 - **References**: Paragraphs starting with "[number]"
 
+## Recent Improvements (v1.2.0)
+
+- **Enhanced Author Detection**: Improved detection of author sections between title and abstract
+- **Better Author Formatting**: Author names, affiliations, and contact information now follow IEEE standards more closely
+- **XML-level Font Control**: Direct XML manipulation ensures more reliable font formatting
+- **Paragraph-level Formatting**: Better handling of paragraph-level properties that may override run formatting
+
 ## Limitations
 
 - The converter uses heuristics to detect document elements. For best results:
-  - Ensure your document has clear section headings
+  - Ensure your document has a clear title as the first paragraph
+  - Place all author information (names, affiliations, emails) between the title and abstract
+  - Include an "Abstract" heading to mark the start of abstract section
   - Use standard section numbering (I., II., III. or 1., 2., 3.)
   - Label figures and tables clearly
 - Two-column format is optional (use `--two-column` flag to enable it)
@@ -175,6 +190,7 @@ The converter:
   - For best results with two-column format, consider manually keeping title/authors in single-column
 - Complex formatting may require manual adjustment
 - Images and embedded objects are preserved but not reformatted
+- Some Word documents with heavily customized styles may require manual fine-tuning after conversion
 
 ## Contributing
 

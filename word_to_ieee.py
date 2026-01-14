@@ -95,21 +95,26 @@ class IEEEFormatter:
     
     def _format_paragraphs(self):
         """Format all paragraphs according to IEEE standards."""
-        for paragraph in self.doc.paragraphs:
+        title_found = False
+        abstract_found = False
+
+        for idx, paragraph in enumerate(self.doc.paragraphs):
             # Skip empty paragraphs
             if not paragraph.text.strip():
                 continue
-            
+
             # Detect paragraph type and format accordingly
             text = paragraph.text.strip()
-            
-            # Title detection (usually first paragraph, large font, centered)
-            if self._is_title(paragraph):
+
+            # Title detection (usually first paragraph)
+            if self._is_title(paragraph, idx):
                 self._format_title(paragraph)
-            elif self._is_author(paragraph):
-                self._format_author(paragraph)
+                title_found = True
             elif self._is_abstract_heading(paragraph):
                 self._format_abstract_heading(paragraph)
+                abstract_found = True
+            elif self._is_author(paragraph, idx, title_found, abstract_found):
+                self._format_author(paragraph)
             elif self._is_section_heading(paragraph):
                 self._format_section_heading(paragraph)
             elif self._is_subsection_heading(paragraph):
@@ -123,21 +128,43 @@ class IEEEFormatter:
             else:
                 self._format_body_text(paragraph)
     
-    def _is_title(self, paragraph):
+    def _is_title(self, paragraph, para_idx):
         """Check if paragraph is a title."""
-        # Title is usually first non-empty paragraph, centered, and shorter
-        if paragraph == self.doc.paragraphs[0] or len(paragraph.text) < 200:
-            return paragraph.alignment == WD_ALIGN_PARAGRAPH.CENTER
+        text = paragraph.text.strip()
+        # Title is usually the first non-empty paragraph
+        # It should not contain keywords associated with author info
+        if len(text) > 0 and len(text) < 200:
+            if para_idx <= 3:  # Within first few paragraphs
+                # Not an author line if it contains these keywords
+                if not any(kw in text.lower() for kw in ['@', 'university', 'chicago', 'manager', 'director', 'engineer', 'school']):
+                    return True
         return False
     
-    def _is_author(self, paragraph):
+    def _is_author(self, paragraph, para_idx, title_found, abstract_found):
         """Check if paragraph contains author information."""
         text = paragraph.text.lower()
-        return any(keyword in text for keyword in ['author', '@', 'email', 'university', 'department'])
+
+        # Author section is only between title and abstract
+        if not title_found or abstract_found:
+            return False
+
+        # Author section is typically right after title (within first 20 paragraphs)
+        if para_idx > 20:
+            return False
+
+        # Check for typical author section keywords
+        author_keywords = ['@', 'university', 'department', 'school of',
+                          'chicago', 'usa', 'manager', 'director', 'engineer',
+                          'northwestern', 'paylocity', 'duetto', 'marketplace', 'il,']
+
+        # All paragraphs between title and abstract are author info
+        # This includes names, emails, titles, organizations, locations
+        return True
     
     def _is_abstract_heading(self, paragraph):
         """Check if paragraph is abstract heading."""
-        return paragraph.text.strip().lower() == 'abstract'
+        text = paragraph.text.strip().lower()
+        return text == 'abstract' or text.startswith('abstract -') or text.startswith('abstract-')
     
     def _is_section_heading(self, paragraph):
         """Check if paragraph is a section heading (I., II., III., etc.)."""
@@ -190,9 +217,28 @@ class IEEEFormatter:
     def _format_author(self, paragraph):
         """Format author paragraph."""
         font_name, font_size, is_bold = self.IEEE_FONTS['author']
-        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        self._apply_font(paragraph, font_name, font_size, is_bold)
-        paragraph.paragraph_format.space_after = Pt(6)
+        text = paragraph.text.strip()
+
+        # Check if this is a job title/organization line (should be italic)
+        if any(keyword in text.lower() for keyword in ['manager', 'director', 'engineer', 'school of', 'university', 'chicago', 'usa']):
+            # Organization/title lines are italic
+            self._apply_font(paragraph, font_name, font_size, False, True)
+        else:
+            # Name and email are regular (not bold, not italic)
+            self._apply_font(paragraph, font_name, font_size, False, False)
+
+        # Set formatting AFTER applying font to avoid conflicts
+        # Author sections should be left-aligned, not centered
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        paragraph.paragraph_format.space_after = Pt(0)
+        paragraph.paragraph_format.space_before = Pt(0)
+
+        # Clear paragraph-level run properties that might override run formatting
+        # This must be done AFTER setting alignment and spacing
+        pPr = paragraph._element.get_or_add_pPr()
+        rPr = pPr.find('.//{{http://schemas.openxmlformats.org/wordprocessingml/2006/main}}rPr')
+        if rPr is not None:
+            pPr.remove(rPr)
     
     def _format_abstract_heading(self, paragraph):
         """Format abstract heading."""
@@ -254,12 +300,57 @@ class IEEEFormatter:
     
     def _apply_font(self, paragraph, font_name, font_size, is_bold=False, is_italic=False):
         """Apply font formatting to paragraph."""
+        from docx.oxml import parse_xml
+        from docx.oxml.ns import qn
+
+        # Modify existing runs with direct XML manipulation for reliable formatting
         for run in paragraph.runs:
-            run.font.name = font_name
-            run.font.size = Pt(font_size)
-            run.font.bold = is_bold
-            run.font.italic = is_italic
-            run.font.color.rgb = RGBColor(0, 0, 0)  # Black
+            rPr = run._element.get_or_add_rPr()
+
+            # Set font name
+            rFonts = rPr.find(qn('w:rFonts'))
+            if rFonts is None:
+                rFonts = parse_xml(f'<w:rFonts xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:ascii="{font_name}" w:hAnsi="{font_name}"/>')
+                rPr.append(rFonts)
+            else:
+                rFonts.set(qn('w:ascii'), font_name)
+                rFonts.set(qn('w:hAnsi'), font_name)
+
+            # Set font size (in half-points)
+            sz = rPr.find(qn('w:sz'))
+            if sz is None:
+                sz = parse_xml(f'<w:sz xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:val="{font_size * 2}"/>')
+                rPr.append(sz)
+            else:
+                sz.set(qn('w:val'), str(font_size * 2))
+
+            # Set bold
+            b = rPr.find(qn('w:b'))
+            if is_bold:
+                if b is None:
+                    b = parse_xml('<w:b xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>')
+                    rPr.append(b)
+                else:
+                    # Remove w:val attribute if present
+                    if b.get(qn('w:val')) is not None:
+                        del b.attrib[qn('w:val')]
+            else:
+                # Remove bold element entirely or set to 0
+                if b is not None:
+                    rPr.remove(b)
+
+            # Set italic
+            i = rPr.find(qn('w:i'))
+            if is_italic:
+                if i is None:
+                    i = parse_xml('<w:i xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"/>')
+                    rPr.append(i)
+                else:
+                    if i.get(qn('w:val')) is not None:
+                        del i.attrib[qn('w:val')]
+            else:
+                if i is not None:
+                    rPr.remove(i)
     
     def _format_tables(self):
         """Format all tables according to IEEE standards."""
