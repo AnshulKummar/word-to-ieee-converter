@@ -15,7 +15,9 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/AnshulKummar/word-to-ieee-converter",
-    py_modules=["word_to_ieee"],
+    py_modules=["word_to_ieee", "word_to_ieee_web"],
+    package_data={"": ["templates/*.html"]},
+    include_package_data=True,
     install_requires=requirements,
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -33,6 +35,7 @@ setup(
     entry_points={
         "console_scripts": [
             "word-to-ieee=word_to_ieee:main",
+            "word-to-ieee-web=word_to_ieee_web:app.run",
         ],
     },
 )

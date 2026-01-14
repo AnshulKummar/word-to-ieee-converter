@@ -150,7 +150,7 @@ class IEEEFormatter:
                                 text.startswith('IX.') or text.startswith('X.')):
             return True
         # Check for numbered sections (1., 2., 3., etc.)
-        if len(text) < 100 and text[0].isdigit() and '.' in text[:3]:
+        if len(text) >= 2 and len(text) < 100 and text[0].isdigit() and '.' in text[:3]:
             return True
         return False
     
@@ -177,7 +177,7 @@ class IEEEFormatter:
         """Check if paragraph is a reference."""
         text = paragraph.text.strip()
         # References usually start with [number]
-        return text.startswith('[') and text[1].isdigit()
+        return len(text) >= 2 and text.startswith('[') and text[1].isdigit()
     
     def _format_title(self, paragraph):
         """Format title paragraph."""
