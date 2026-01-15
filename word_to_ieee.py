@@ -34,7 +34,9 @@ class IEEEFormatter:
         'body': ('Times New Roman', 10, False),  # 10pt, Regular
         'figure_caption': ('Times New Roman', 9, False, True),  # 9pt, Italic
         'table_caption': ('Times New Roman', 9, False, True),  # 9pt, Italic
-        'reference': ('Times New Roman', 9, False)  # 9pt, Regular
+        'reference': ('Times New Roman', 9, False),  # 9pt, Regular
+        'code_block': ('Courier New', 9, False),  # 9pt, Monospace
+        'code_caption': ('Times New Roman', 9, False)  # 9pt, Regular
     }
     
     IEEE_SPACING = {
@@ -115,6 +117,10 @@ class IEEEFormatter:
                 abstract_found = True
             elif self._is_author(paragraph, idx, title_found, abstract_found):
                 self._format_author(paragraph)
+            elif self._is_code_block(paragraph):
+                self._format_code_block(paragraph)
+            elif self._is_code_caption(paragraph):
+                self._format_code_caption(paragraph)
             elif self._is_section_heading(paragraph):
                 self._format_section_heading(paragraph)
             elif self._is_subsection_heading(paragraph):
@@ -205,6 +211,31 @@ class IEEEFormatter:
         text = paragraph.text.strip()
         # References usually start with [number]
         return len(text) >= 2 and text.startswith('[') and text[1].isdigit()
+
+    def _is_code_block(self, paragraph):
+        """Check if paragraph is a code block."""
+        # Code blocks typically have monospace fonts or specific styles
+        # Check for common code indicators: indentation, curly braces, keywords
+        text = paragraph.text.strip()
+
+        # Check if paragraph has monospace font
+        for run in paragraph.runs:
+            if run.font.name and 'courier' in run.font.name.lower():
+                return True
+
+        # Check for common code patterns
+        code_indicators = [
+            'def ', 'function ', 'class ', 'import ', 'from ',
+            '{', '}', '()', '=>', 'CREATE TABLE', 'SELECT ', 'INSERT INTO',
+            'var ', 'const ', 'let ', 'return ', 'if (', 'for ('
+        ]
+
+        return any(indicator in text for indicator in code_indicators)
+
+    def _is_code_caption(self, paragraph):
+        """Check if paragraph is a code block caption."""
+        text = paragraph.text.strip()
+        return text.lower().startswith('code block')
     
     def _format_title(self, paragraph):
         """Format title paragraph."""
@@ -297,6 +328,60 @@ class IEEEFormatter:
         paragraph.paragraph_format.first_line_indent = Inches(0.25)  # First line indent
         paragraph.paragraph_format.space_after = Pt(0)
         paragraph.paragraph_format.line_spacing = self.IEEE_SPACING['line_spacing']
+
+    def _format_code_block(self, paragraph):
+        """Format code block with border and background."""
+        from docx.oxml.shared import OxmlElement
+        from docx.oxml.ns import qn
+
+        font_name, font_size, is_bold = self.IEEE_FONTS['code_block']
+
+        # Apply monospace font
+        self._apply_font(paragraph, font_name, font_size, is_bold)
+
+        # Set alignment
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+        # Add border around paragraph
+        pPr = paragraph._element.get_or_add_pPr()
+        pBdr = pPr.find(qn('w:pBdr'))
+        if pBdr is None:
+            pBdr = OxmlElement('w:pBdr')
+            pPr.append(pBdr)
+
+        # Add borders on all sides (1pt solid black)
+        for border_name in ['w:top', 'w:left', 'w:bottom', 'w:right']:
+            border = OxmlElement(border_name)
+            border.set(qn('w:val'), 'single')
+            border.set(qn('w:sz'), '4')  # 1/2 pt (4/8)
+            border.set(qn('w:space'), '1')
+            border.set(qn('w:color'), '000000')
+            pBdr.append(border)
+
+        # Add light gray background shading
+        shd = pPr.find(qn('w:shd'))
+        if shd is None:
+            shd = OxmlElement('w:shd')
+            pPr.append(shd)
+        shd.set(qn('w:val'), 'clear')
+        shd.set(qn('w:color'), 'auto')
+        shd.set(qn('w:fill'), 'F0F0F0')  # Light gray
+
+        # Set spacing
+        paragraph.paragraph_format.space_before = Pt(6)
+        paragraph.paragraph_format.space_after = Pt(6)
+        paragraph.paragraph_format.left_indent = Inches(0.25)
+        paragraph.paragraph_format.right_indent = Inches(0.25)
+        paragraph.paragraph_format.first_line_indent = Pt(0)
+
+    def _format_code_caption(self, paragraph):
+        """Format code block caption."""
+        font_name, font_size, is_bold = self.IEEE_FONTS['code_caption']
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        self._apply_font(paragraph, font_name, font_size, is_bold)
+        paragraph.paragraph_format.space_before = Pt(3)
+        paragraph.paragraph_format.space_after = Pt(12)
+        paragraph.paragraph_format.left_indent = Inches(0.25)
     
     def _apply_font(self, paragraph, font_name, font_size, is_bold=False, is_italic=False):
         """Apply font formatting to paragraph."""

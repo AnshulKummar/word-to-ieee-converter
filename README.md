@@ -13,6 +13,8 @@ A Python utility that automatically converts Microsoft Word documents to IEEE st
   - Abstract section
   - Section headings (I., II., III., etc.)
   - Subsection headings (A., B., C., etc.)
+  - Code blocks with bordered boxes and light gray background
+  - Code block captions
   - Figure and table captions
   - References
   - Body text with proper indentation
@@ -136,6 +138,8 @@ The converter applies the following IEEE standards:
 - **Section Headings**: Times New Roman, 10pt, Bold
 - **Subsection Headings**: Times New Roman, 10pt, Bold, Italic
 - **Body Text**: Times New Roman, 10pt, Regular, Justified
+- **Code Blocks**: Courier New, 9pt, Monospace, with border and light gray background
+- **Code Captions**: Times New Roman, 9pt, Regular, Left-aligned
 - **Figure/Table Captions**: Times New Roman, 9pt, Italic, Centered
 - **References**: Times New Roman, 9pt, Regular, Hanging Indent
 
@@ -164,14 +168,26 @@ The converter:
   - Locations (city, state)
   - Job titles
 - **Abstract**: Paragraph starting with "Abstract"
+- **Code Blocks**: Paragraphs containing code patterns (def, function, class, CREATE TABLE, etc.) or monospace fonts (Courier)
+- **Code Captions**: Text starting with "Code Block"
 - **Sections**: Paragraphs starting with Roman numerals (I., II., III., etc.) or numbers (1., 2., 3., etc.)
 - **Subsections**: Paragraphs starting with letters (A., B., C., etc.)
 - **Figure Captions**: Text starting with "Figure" or "Fig."
 - **Table Captions**: Text starting with "Table"
 - **References**: Paragraphs starting with "[number]"
 
-## Recent Improvements (v1.2.0)
+## Recent Improvements
 
+### v1.3.0
+- **Code Block Formatting**: Automatic detection and formatting of code blocks with:
+  - Bordered boxes (1pt solid black borders)
+  - Light gray background (matching IEEE standards)
+  - Monospace font (Courier New, 9pt)
+  - Proper indentation and spacing
+- **Code Caption Support**: Automatic formatting of "Code Block" captions
+- **Enhanced Detection**: Recognition of common code patterns (Python, SQL, JavaScript, etc.)
+
+### v1.2.0
 - **Enhanced Author Detection**: Improved detection of author sections between title and abstract
 - **Better Author Formatting**: Author names, affiliations, and contact information now follow IEEE standards more closely
 - **XML-level Font Control**: Direct XML manipulation ensures more reliable font formatting
