@@ -99,14 +99,57 @@ class IEEEFormatter:
         """Format all paragraphs according to IEEE standards."""
         title_found = False
         abstract_found = False
+        skip_next = set()  # Track paragraph indices to skip (already processed as part of code block)
+        in_code_block = False  # Track if we're inside a code block
 
         for idx, paragraph in enumerate(self.doc.paragraphs):
-            # Skip empty paragraphs
-            if not paragraph.text.strip():
+            # Skip if already processed
+            if idx in skip_next:
+                continue
+
+            # Skip empty paragraphs (unless inside code block)
+            if not paragraph.text.strip() and not in_code_block:
                 continue
 
             # Detect paragraph type and format accordingly
             text = paragraph.text.strip()
+
+            # Check for code block markers
+            if text.lower() == '<code block start>':
+                in_code_block = True
+                # Remove the marker paragraph
+                paragraph.clear()
+                continue
+            elif text.lower() == '<code block end>':
+                in_code_block = False
+                # Remove the marker paragraph
+                paragraph.clear()
+                continue
+
+            # If we're inside a code block, collect all paragraphs until end marker
+            if in_code_block:
+                code_paragraphs = [paragraph]
+                next_idx = idx + 1
+
+                # Look ahead to find all paragraphs until <code block end>
+                while next_idx < len(self.doc.paragraphs):
+                    next_para = self.doc.paragraphs[next_idx]
+                    next_text = next_para.text.strip().lower()
+
+                    if next_text == '<code block end>':
+                        in_code_block = False
+                        skip_next.add(next_idx)
+                        # Remove the end marker
+                        next_para.clear()
+                        break
+                    else:
+                        code_paragraphs.append(next_para)
+                        skip_next.add(next_idx)
+                        next_idx += 1
+
+                # Format all code paragraphs together
+                self._format_code_block_group(code_paragraphs)
+                continue
 
             # Title detection (usually first paragraph)
             if self._is_title(paragraph, idx):
@@ -117,8 +160,6 @@ class IEEEFormatter:
                 abstract_found = True
             elif self._is_author(paragraph, idx, title_found, abstract_found):
                 self._format_author(paragraph)
-            elif self._is_code_block(paragraph):
-                self._format_code_block(paragraph)
             elif self._is_code_caption(paragraph):
                 self._format_code_caption(paragraph)
             elif self._is_section_heading(paragraph):
@@ -214,23 +255,48 @@ class IEEEFormatter:
 
     def _is_code_block(self, paragraph):
         """Check if paragraph is a code block."""
-        # Code blocks typically have monospace fonts or specific styles
-        # Check for common code indicators: indentation, curly braces, keywords
         text = paragraph.text.strip()
 
-        # Check if paragraph has monospace font
+        # First, check if paragraph has monospace font (most reliable indicator)
+        has_monospace = False
         for run in paragraph.runs:
             if run.font.name and 'courier' in run.font.name.lower():
-                return True
+                has_monospace = True
+                break
 
-        # Check for common code patterns
-        code_indicators = [
-            'def ', 'function ', 'class ', 'import ', 'from ',
-            '{', '}', '()', '=>', 'CREATE TABLE', 'SELECT ', 'INSERT INTO',
-            'var ', 'const ', 'let ', 'return ', 'if (', 'for ('
+        # If it has monospace font, it's likely a code block
+        if has_monospace:
+            return True
+
+        # Otherwise, only detect as code if it has multiple strong code indicators
+        # This prevents false positives from normal text
+
+        # Must have at least 2 of these strong indicators
+        strong_indicators = [
+            'def ' in text and '():' in text,  # Python function definition
+            'function ' in text and '{' in text,  # JavaScript function
+            'class ' in text and ':' in text,  # Python class
+            'CREATE TABLE' in text or 'INSERT INTO' in text or 'SELECT ' in text and 'FROM' in text,  # SQL
+            text.count('(') >= 2 and text.count(')') >= 2 and ('=' in text or 'return' in text),  # Function calls
+            '    ' in text and ('def ' in text or 'import ' in text or 'from ' in text),  # Indented Python
+            text.startswith('{') or text.startswith('var ') or text.startswith('const '),  # JavaScript
         ]
 
-        return any(indicator in text for indicator in code_indicators)
+        # Count how many strong indicators are present
+        indicator_count = sum(1 for indicator in strong_indicators if indicator)
+
+        # Also check line length and structure - code blocks are usually multi-line or have specific syntax
+        has_newlines = '\n' in paragraph.text
+        has_semicolons = text.count(';') >= 1
+        has_indentation = '    ' in text or '\t' in text
+
+        # Require at least 2 strong indicators OR 1 strong indicator with code-like structure
+        if indicator_count >= 2:
+            return True
+        elif indicator_count >= 1 and (has_newlines or has_semicolons or has_indentation):
+            return True
+
+        return False
 
     def _is_code_caption(self, paragraph):
         """Check if paragraph is a code block caption."""
@@ -329,50 +395,128 @@ class IEEEFormatter:
         paragraph.paragraph_format.space_after = Pt(0)
         paragraph.paragraph_format.line_spacing = self.IEEE_SPACING['line_spacing']
 
-    def _format_code_block(self, paragraph):
-        """Format code block with border and background."""
+    def _format_code_block_group(self, paragraphs):
+        """Format a group of consecutive code block paragraphs as a single boxed unit."""
         from docx.oxml.shared import OxmlElement
         from docx.oxml.ns import qn
 
         font_name, font_size, is_bold = self.IEEE_FONTS['code_block']
 
-        # Apply monospace font
-        self._apply_font(paragraph, font_name, font_size, is_bold)
+        for i, paragraph in enumerate(paragraphs):
+            # Check if this paragraph contains newlines - if so, split it into separate lines
+            if '\n' in paragraph.text:
+                # This paragraph has multiple lines of code - need to preserve line breaks
+                # Split the text by newlines and handle each line
+                self._split_code_paragraph_by_lines(paragraph)
 
-        # Set alignment
-        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            # Apply monospace font to all paragraphs
+            self._apply_font(paragraph, font_name, font_size, is_bold)
+            paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
-        # Add border around paragraph
-        pPr = paragraph._element.get_or_add_pPr()
-        pBdr = pPr.find(qn('w:pBdr'))
-        if pBdr is None:
-            pBdr = OxmlElement('w:pBdr')
-            pPr.append(pBdr)
+            pPr = paragraph._element.get_or_add_pPr()
 
-        # Add borders on all sides (1pt solid black)
-        for border_name in ['w:top', 'w:left', 'w:bottom', 'w:right']:
-            border = OxmlElement(border_name)
-            border.set(qn('w:val'), 'single')
-            border.set(qn('w:sz'), '4')  # 1/2 pt (4/8)
-            border.set(qn('w:space'), '1')
-            border.set(qn('w:color'), '000000')
-            pBdr.append(border)
+            # Add borders and shading
+            # First paragraph gets top border, last gets bottom, all get left/right
+            pBdr = pPr.find(qn('w:pBdr'))
+            if pBdr is None:
+                pBdr = OxmlElement('w:pBdr')
+                pPr.append(pBdr)
 
-        # Add light gray background shading
-        shd = pPr.find(qn('w:shd'))
-        if shd is None:
-            shd = OxmlElement('w:shd')
-            pPr.append(shd)
-        shd.set(qn('w:val'), 'clear')
-        shd.set(qn('w:color'), 'auto')
-        shd.set(qn('w:fill'), 'F0F0F0')  # Light gray
+            # Clear any existing borders
+            for child in list(pBdr):
+                pBdr.remove(child)
 
-        # Set spacing
-        paragraph.paragraph_format.space_before = Pt(6)
-        paragraph.paragraph_format.space_after = Pt(6)
-        paragraph.paragraph_format.left_indent = Inches(0.25)
-        paragraph.paragraph_format.right_indent = Inches(0.25)
-        paragraph.paragraph_format.first_line_indent = Pt(0)
+            # Add appropriate borders based on position
+            if i == 0:
+                # First paragraph: top, left, right
+                for border_name in ['w:top', 'w:left', 'w:right']:
+                    border = OxmlElement(border_name)
+                    border.set(qn('w:val'), 'single')
+                    border.set(qn('w:sz'), '4')
+                    border.set(qn('w:space'), '1')
+                    border.set(qn('w:color'), '000000')
+                    pBdr.append(border)
+            elif i == len(paragraphs) - 1:
+                # Last paragraph: bottom, left, right
+                for border_name in ['w:bottom', 'w:left', 'w:right']:
+                    border = OxmlElement(border_name)
+                    border.set(qn('w:val'), 'single')
+                    border.set(qn('w:sz'), '4')
+                    border.set(qn('w:space'), '1')
+                    border.set(qn('w:color'), '000000')
+                    pBdr.append(border)
+            else:
+                # Middle paragraphs: left and right only
+                for border_name in ['w:left', 'w:right']:
+                    border = OxmlElement(border_name)
+                    border.set(qn('w:val'), 'single')
+                    border.set(qn('w:sz'), '4')
+                    border.set(qn('w:space'), '1')
+                    border.set(qn('w:color'), '000000')
+                    pBdr.append(border)
+
+            # Add light gray background to all paragraphs
+            shd = pPr.find(qn('w:shd'))
+            if shd is None:
+                shd = OxmlElement('w:shd')
+                pPr.append(shd)
+            shd.set(qn('w:val'), 'clear')
+            shd.set(qn('w:color'), 'auto')
+            shd.set(qn('w:fill'), 'F0F0F0')
+
+            # Set spacing and indentation for proper code formatting
+            if i == 0:
+                paragraph.paragraph_format.space_before = Pt(6)
+                paragraph.paragraph_format.space_after = Pt(0)
+            elif i == len(paragraphs) - 1:
+                paragraph.paragraph_format.space_before = Pt(0)
+                paragraph.paragraph_format.space_after = Pt(6)
+            else:
+                paragraph.paragraph_format.space_before = Pt(0)
+                paragraph.paragraph_format.space_after = Pt(0)
+
+            # Code block formatting - use single line spacing
+            paragraph.paragraph_format.line_spacing = 1.0
+            paragraph.paragraph_format.left_indent = Inches(0.25)
+            paragraph.paragraph_format.right_indent = Inches(0.25)
+            paragraph.paragraph_format.first_line_indent = Pt(0)
+
+    def _split_code_paragraph_by_lines(self, paragraph):
+        """Split a paragraph containing newlines into proper line breaks using w:br elements."""
+        from docx.oxml.shared import OxmlElement
+        from docx.oxml.ns import qn
+
+        # Get the paragraph element
+        p_elem = paragraph._element
+
+        # Process each run in the paragraph
+        for run in paragraph.runs:
+            if '\n' in run.text:
+                # This run contains newlines - need to split it
+                r_elem = run._element
+
+                # Get the run properties to preserve formatting
+                rPr = r_elem.find(qn('w:rPr'))
+
+                # Split the text by newlines
+                lines = run.text.split('\n')
+
+                # Clear the run's text
+                for t_elem in r_elem.findall(qn('w:t')):
+                    r_elem.remove(t_elem)
+
+                # Add text elements with line breaks between them
+                for idx, line in enumerate(lines):
+                    # Add text element
+                    t = OxmlElement('w:t')
+                    t.set(qn('xml:space'), 'preserve')  # Preserve spaces
+                    t.text = line
+                    r_elem.append(t)
+
+                    # Add line break after each line except the last
+                    if idx < len(lines) - 1:
+                        br = OxmlElement('w:br')
+                        r_elem.append(br)
 
     def _format_code_caption(self, paragraph):
         """Format code block caption."""

@@ -168,7 +168,9 @@ The converter:
   - Locations (city, state)
   - Job titles
 - **Abstract**: Paragraph starting with "Abstract"
-- **Code Blocks**: Paragraphs containing code patterns (def, function, class, CREATE TABLE, etc.) or monospace fonts (Courier)
+- **Code Blocks**: Content between `<code block start>` and `<code block end>` markers
+  - Simply add `<code block start>` before your code and `<code block end>` after it
+  - Everything between these markers will be formatted as code with proper boxing
 - **Code Captions**: Text starting with "Code Block"
 - **Sections**: Paragraphs starting with Roman numerals (I., II., III., etc.) or numbers (1., 2., 3., etc.)
 - **Subsections**: Paragraphs starting with letters (A., B., C., etc.)
@@ -178,6 +180,18 @@ The converter:
 
 ## Recent Improvements
 
+### v1.4.0
+- **Marker-Based Code Blocks**: Precise code block control using explicit markers
+  - Use `<code block start>` and `<code block end>` to mark code sections
+  - Eliminates false positives from automatic detection
+  - Markers are automatically removed from the output document
+  - All content between markers gets proper IEEE code formatting
+- **Improved Code Formatting**: Enhanced line break and spacing preservation
+  - Properly preserves newlines within code blocks using Word line breaks (w:br)
+  - Maintains indentation and spacing in multi-line code
+  - Single line spacing for better code readability
+  - Preserves whitespace characters (spaces, tabs) in code
+
 ### v1.3.0
 - **Code Block Formatting**: Automatic detection and formatting of code blocks with:
   - Bordered boxes (1pt solid black borders)
@@ -185,7 +199,6 @@ The converter:
   - Monospace font (Courier New, 9pt)
   - Proper indentation and spacing
 - **Code Caption Support**: Automatic formatting of "Code Block" captions
-- **Enhanced Detection**: Recognition of common code patterns (Python, SQL, JavaScript, etc.)
 
 ### v1.2.0
 - **Enhanced Author Detection**: Improved detection of author sections between title and abstract
