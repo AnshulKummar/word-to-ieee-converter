@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<evaluation>
+  <qa_pair>
+    <question>According to the IEEE formatting guide available through the MCP server, what font family and size in points should be used for code blocks?</question>
+    <answer>Courier New, 9pt</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>What is the total horizontal margin space (left margin plus right margin) in inches required for IEEE documents according to the formatting standards?</question>
+    <answer>1.25</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>What exact text marker (including angle brackets) should be placed on a separate line before a code section to indicate the start of a code block for IEEE formatting?</question>
+    <answer>&lt;code block start&gt;</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>According to the IEEE formatting guide, what font size in points is specified for the document title?</question>
+    <answer>24</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>What is the line spacing value (as a decimal number) used throughout IEEE documents for all text including body paragraphs?</question>
+    <answer>1.0</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>What is the bottom margin measurement in inches specified by IEEE formatting standards?</question>
+    <answer>1.0</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>According to the IEEE guide, what font should be used for section headings, and is it bold or regular weight?</question>
+    <answer>Times New Roman, bold</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>What is the background color specified in the code block formatting section (in hexadecimal format including the # symbol)?</question>
+    <answer>#F0F0F0</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>What is the font size in points specified for figure and table captions in IEEE format?</question>
+    <answer>9</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>According to the formatting guide, what is the top margin measurement in inches for IEEE documents?</question>
+    <answer>0.75</answer>
+  </qa_pair>
+</evaluation>

@@ -1,0 +1,40 @@
+{
+  "name": "ieee-docx-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for converting Word documents to IEEE format",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "ieee-docx-mcp-server": "./dist/index.js"
+  },
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "npm run build && node dist/index.js --help"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ieee",
+    "document",
+    "docx",
+    "conversion",
+    "formatting"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
